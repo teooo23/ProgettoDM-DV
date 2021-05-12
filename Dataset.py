@@ -8,7 +8,7 @@ class Dataset:
         file = open(dataset_path,"r")
         self.data1 = json.load(file)
         file.close()
-        self.players =  pd.read_csv("ProgettoDM-DV/Players.csv", sep="\t", header=None, names=['playerId', 'Name', 'Team', 'League'], index_col='playerId')
+        self.players =  pd.read_csv("Players.csv", sep="\t", header=None, names=['playerId', 'Name', 'Team', 'League'], index_col='playerId')
         self.player_name_id = self.players[self.players['League'] == 'SerieA']['Name']
         self.d = self.player_name_id.to_dict()
 
@@ -181,24 +181,25 @@ class Dataset:
                 },
                  'Goal' : {
                      'TotalGoals' : self.GiocatoriGoalTotali()[id_],
+                     'HatTrick' : self.getAllTriplets()[id_],
                      'Penalty' : self.GiocatoriRigori()[id_],
                      'OpenPlay' : self.GiocatoriOpenPlay()[id_],
                      'GoalSetPiece' : self.GiocatoriPallaFerma()[id_]
                  },
                  'Assist' : self.GiocatoriAssists()[id_],
-                 'CleanSheet' : self.PortieriInviolati()[id_]
+                 'CleanSheet' : self.PortieriInviolati()[id_],
+                 'Card' : {
+                    'Yellow' : self.Cartellini()[0][id_] - self.Cartellini()[1][id_],
+                    'DoubleYellow' : self.Cartellini()[1][id_],
+                    'Red' : self.Cartellini()[2][id_]
+                 }
                 }
             except KeyError:
                 print(id_)
                 break
-            #print('Riga Scritta')
         return stats
 
     def create(self):
         with open('Dataset.json', 'w') as f:
             f.write(json.dumps(self.build_dataset()))
         print("Dataset created")
-
-#dataset = Dataset("ProgettoDM-DV/Dataset/SerieA-2018-2019.json")
-#dataset.create()
-#print(dataset.GiocatoriGoalTotali().keys())
