@@ -206,7 +206,7 @@ Associa la chiave **value** al valore **displayName** dei [qualifiers](#qualifie
 ## Esempio di utilizzo:
 ```
 from DownloadHelper import DownloadHelper
-helper = new DownloadHelper()
+helper = DownloadHelper()
 helper.timeout = 15
 helper.max_iter = 2
 helper.competition = "SerieA"
