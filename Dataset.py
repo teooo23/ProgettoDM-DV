@@ -1,16 +1,24 @@
 import json
+import csv
 from collections import Counter
-import pandas as pd
 
 class Dataset:
 
-    def __init__(self, dataset_path):
+    def __init__(self, dataset_path, csv_path):
         file = open(dataset_path,"r")
         self.data1 = json.load(file)
         file.close()
-        self.players =  pd.read_csv("Players.csv", sep="\t", header=None, names=['playerId', 'Name', 'Team', 'League'], index_col='playerId')
-        self.player_name_id = self.players[self.players['League'] == 'SerieA']['Name']
-        self.d = self.player_name_id.to_dict()
+
+        self.player = {}
+        with open(csv_path, encoding='utf-8') as csvfile:
+            csvReader = csv.DictReader(csvfile)
+            for row in csvReader:
+                key = row['playerId']
+                del row['playerId']
+                if key not in self.player:
+                    self.player[key] = row
+                else:
+                    self.player[key]['Team2'] = row['Team']
 
     #FUNIONE CHE RITOENA DIZIONARIO CON NUMERO DI PARTITE DA TITOLARE PER OGNI GIOCATORE (ID)
     # I TITOLTALI SONO I PRIMI 11 ELEMENTI DELLA LISTA, QUINDI PRENDO DIRETTAMENTE GLI ID DI QUESTI
@@ -180,35 +188,36 @@ class Dataset:
 
     def build_dataset(self):
         stats = {}
-        for id_ in self.d:
-            try:
-                stats[id_] = {
-                'Name' : self.d[id_],
-                'Apperances' : {
-                    'TotalApperances' : self.giocatoriTitolari()[id_] + self.giocatoriNonTitolari()[0][id_],
-                    'Started' : self.giocatoriTitolari()[id_],
-                    'CameOn' : self.giocatoriNonTitolari()[0][id_],
-                    'TakenOff' : self.giocatoriNonTitolari()[1][id_]
-                },
-                 'Goal' : {
-                     'TotalGoals' : self.GiocatoriGoalTotali()[id_],
-                     'HatTrick' : self.getAllTriplets()[id_],
-                     'Penalty' : self.GiocatoriRigori()[id_],
-                     'OpenPlay' : self.GiocatoriOpenPlay()[id_],
-                     'GoalSetPiece' : self.GiocatoriPallaFerma()[id_],
-                     'OwnGoal' : self.Autogol()[id_]
-                 },
-                 'Assist' : self.GiocatoriAssists()[id_],
-                 'CleanSheet' : self.PortieriInviolati()[id_],
-                 'Card' : {
-                    'Yellow' : self.Cartellini()[0][id_] - self.Cartellini()[1][id_],
-                    'DoubleYellow' : self.Cartellini()[1][id_],
-                    'Red' : self.Cartellini()[2][id_]
-                 }
-                }
-            except KeyError:
-                print(id_)
-                break
+        for id_ in self.player.keys():
+            stats[id_] = {
+            'Name' : self.player[id_]['Name'],
+            'Team' : self.player[id_]['Team'],
+            'League' : self.player[id_]['League'],
+            'Apperances' : {
+                'TotalApperances' : self.giocatoriTitolari()[id_] + self.giocatoriNonTitolari()[0][id_],
+                'Started' : self.giocatoriTitolari()[id_],
+                'CameOn' : self.giocatoriNonTitolari()[0][id_],
+                'TakenOff' : self.giocatoriNonTitolari()[1][id_]
+            },
+             'Goal' : {
+                 'TotalGoals' : self.GiocatoriGoalTotali()[id_],
+                 'HatTrick' : self.getAllTriplets()[id_],
+                 'Penalty' : self.GiocatoriRigori()[id_],
+                 'OpenPlay' : self.GiocatoriOpenPlay()[id_],
+                 'GoalSetPiece' : self.GiocatoriPallaFerma()[id_],
+                 'OwnGoal' : self.Autogol()[id_]
+             },
+             'Assist' : self.GiocatoriAssists()[id_],
+             'CleanSheet' : self.PortieriInviolati()[id_],
+             'Card' : {
+                'Yellow' : self.Cartellini()[0][id_] - self.Cartellini()[1][id_],
+                'DoubleYellow' : self.Cartellini()[1][id_],
+                'Red' : self.Cartellini()[2][id_]
+             }
+            }
+            if 'Team2' in self.player[id_]:
+                stats['Team2'] : self.player[id_]['Team2']
+
         return stats
 
     def create(self):
