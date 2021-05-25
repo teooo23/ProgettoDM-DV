@@ -5,7 +5,7 @@ from collections import Counter
 class Dataset:
 
     def __init__(self, dataset_path, csv_path):
-        file = open(dataset_path,"r")
+        file = open(dataset_path, "r", encoding='utf-8')
         self.data1 = json.load(file)
         file.close()
 
@@ -20,7 +20,7 @@ class Dataset:
                 else:
                     self.player[key]['Team2'] = row['Team']
 
-    #FUNIONE CHE RITOENA DIZIONARIO CON NUMERO DI PARTITE DA TITOLARE PER OGNI GIOCATORE (ID)
+    #FUNIONE CHE RITORNA DIZIONARIO CON NUMERO DI PARTITE DA TITOLARE PER OGNI GIOCATORE (ID)
     # I TITOLTALI SONO I PRIMI 11 ELEMENTI DELLA LISTA, QUINDI PRENDO DIRETTAMENTE GLI ID DI QUESTI
     def giocatoriTitolari(self):
         ls = []
@@ -186,6 +186,46 @@ class Dataset:
                     ls.append(partita["players"][0]["playerId"])
         return Counter(ls)
 
+    # RESTITUISCE DIZIOANRIO CON LE 4 POSIZIONI: PORTIERE, DIFENSORE, CENTROCAMPISTA, ATTACCANTE
+    def roles(self):
+        role = {}
+        for pos in ['GK', 'DR', 'DC', 'DL', 'MR', 'MC', 'ML', 'FW', 'FWR', 'FWL', 'DMR', 'DML', 'AMC', 'DMC', 'AMR', 'AML']:
+            if pos == 'GK':
+                role[pos] = 'Goalkeeper'
+            elif pos in ('DR', 'DC', 'DL'):
+                role[pos] = 'Defender'
+            elif pos in ('FWR', 'FW', 'FWL', 'AMC', 'AMR', 'AML'):
+                role[pos] = 'Forward'
+            else:
+                role[pos] = 'Midfielder'
+        return role
+
+    # DIZIOANRIO CON CHIAVE ID GIOCATORE E COME VALORE STRINGA CON I RUOLI GIOCATI IN OGNI PARTITA
+    def player_pos(self):
+        d = {}
+        for match in self.data1.keys():
+            for player in self.data1[match]['home']['players'][:11]:
+                if player['playerId'] not in d:
+                    d[player['playerId']] = []
+                position = player['position']
+                d[player['playerId']].append(position)
+            for player in self.data1[match]['away']['players'][:11]:
+                if player['playerId'] not in d:
+                    d[player['playerId']] = []
+                position = player['position']
+                d[player['playerId']].append(position)
+        return d
+
+    def most_frequent(self, List):
+        return max(set(List), key = List.count)
+
+    # TRADUZIONE DELLE SIGLE IN POSIZIONE, TORNA LA POSIZIONE PIÙ GIOCATA PER OGNI GIOCATORE
+    def to_roles(self):
+        roles_word = {}
+        for key in self.player_pos().keys():
+            roles_word[key] = self.roles()[self.most_frequent(self.player_pos()[key])]
+        return roles_word
+
     def build_dataset(self):
         stats = {}
         for id_ in self.player.keys():
@@ -193,30 +233,33 @@ class Dataset:
             'Name' : self.player[id_]['Name'],
             'Team' : self.player[id_]['Team'],
             'League' : self.player[id_]['League'],
+            #'Position' : self.to_roles()[int(id_)],
             'Apperances' : {
-                'TotalApperances' : self.giocatoriTitolari()[id_] + self.giocatoriNonTitolari()[0][id_],
-                'Started' : self.giocatoriTitolari()[id_],
-                'CameOn' : self.giocatoriNonTitolari()[0][id_],
-                'TakenOff' : self.giocatoriNonTitolari()[1][id_]
+                'TotalApperances' : self.giocatoriTitolari()[int(id_)] + self.giocatoriNonTitolari()[0][int(id_)],
+                'Started' : self.giocatoriTitolari()[int(id_)],
+                'CameOn' : self.giocatoriNonTitolari()[0][int(id_)],
+                'TakenOff' : self.giocatoriNonTitolari()[1][int(id_)]
             },
              'Goal' : {
-                 'TotalGoals' : self.GiocatoriGoalTotali()[id_],
-                 'HatTrick' : self.getAllTriplets()[id_],
-                 'Penalty' : self.GiocatoriRigori()[id_],
-                 'OpenPlay' : self.GiocatoriOpenPlay()[id_],
-                 'GoalSetPiece' : self.GiocatoriPallaFerma()[id_],
-                 'OwnGoal' : self.Autogol()[id_]
+                 'TotalGoals' : self.GiocatoriGoalTotali()[int(id_)],
+                 'HatTrick' : self.getAllTriplets()[int(id_)],
+                 'Penalty' : self.GiocatoriRigori()[int(id_)],
+                 'OpenPlay' : self.GiocatoriOpenPlay()[int(id_)],
+                 'GoalSetPiece' : self.GiocatoriPallaFerma()[int(id_)],
+                 'OwnGoal' : self.Autogol()[int(id_)]
              },
-             'Assist' : self.GiocatoriAssists()[id_],
-             'CleanSheet' : self.PortieriInviolati()[id_],
+             'Assist' : self.GiocatoriAssists()[int(id_)],
+             'CleanSheet' : self.PortieriInviolati()[int(id_)],
              'Card' : {
-                'Yellow' : self.Cartellini()[0][id_] - self.Cartellini()[1][id_],
-                'DoubleYellow' : self.Cartellini()[1][id_],
-                'Red' : self.Cartellini()[2][id_]
+                'Yellow' : self.Cartellini()[0][int(id_)] - self.Cartellini()[1][int(id_)],
+                'DoubleYellow' : self.Cartellini()[1][int(id_)],
+                'Red' : self.Cartellini()[2][int(id_)]
              }
             }
             if 'Team2' in self.player[id_]:
-                stats['Team2'] : self.player[id_]['Team2']
+                stats[id_]['Team2'] = self.player[id_]['Team2']
+            if int(id_) in self.to_roles():
+                stats[id_]['Position'] = self.to_roles()[int(id_)]
 
         return stats
 
