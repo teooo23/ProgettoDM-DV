@@ -262,6 +262,6 @@ class DatasetMongo:
             return stats
 
         def create(self):
-            with open('Dataset.json', 'w') as f:
+            with open('Dataset-mongo.json', 'w') as f:
                 f.write(json.dumps(self.build_dataset()))
             print("Dataset created")
