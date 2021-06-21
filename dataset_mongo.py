@@ -8,7 +8,7 @@ from collections import Counter
 
 class DatasetMongo:
 
-    def __init__(self):
+    def __init__(self, csv_path):
         DOMAIN = 'localhost:'
         PORT = 27017
         self.client = MongoClient(
@@ -17,39 +17,50 @@ class DatasetMongo:
         self.db = self.client.Football
         self.stagione_1819 = self.db.Stagione1819
 
+        self.player = {}
+        with open(csv_path, encoding='utf-8') as csvfile:
+            csvReader = csv.DictReader(csvfile)
+            for row in csvReader:
+                key = row['playerId']
+                del row['playerId']
+                if key not in self.player:
+                    self.player[key] = row
+                else:
+                    self.player[key]['Team2'] = row['Team']
+
     #FUNIONE CHE RITORNA DIZIONARIO CON NUMERO DI PARTITE DA TITOLARE PER OGNI GIOCATORE (ID)
     # I TITOLTALI SONO I PRIMI 11 ELEMENTI DELLA LISTA, QUINDI PRENDO DIRETTAMENTE GLI ID DI QUESTI
     def titolari(slf):
-    ids = []
-    results = self.stagione_1819.find({})  ## return cursor
-    for result in results:
-        players = result["away"]["players"]
-        players2 = result["home"]["players"]
-        for player in players[0:11]:
-            ids.append(player["playerId"])
-        for player in players2[0:11]:
-            ids.append(player["playerId"])
-    return Counter(ids)
+        ids = []
+        results = self.stagione_1819.find({})  ## return cursor
+        for result in results:
+            players = result["away"]["players"]
+            players2 = result["home"]["players"]
+            for player in players[0:11]:
+                ids.append(player["playerId"])
+            for player in players2[0:11]:
+                ids.append(player["playerId"])
+        return Counter(ids)
 
     # FUNZIONE CHE RITORNA DUE DIZIONARI:
     # IL PRIMO CONTA IL NUMERO DI PARTITE DA SUBENTRATO PER OGNI GIOCATORE (ID)
     # IL SECONOD IL NUMERO DI PARTITE IN CUI È STATO SOSTITUITO
     def nonTitolari(self):
-    ids_nontit = []
-    ids2_nontit = []
-    results = self.stagione_1819.find({})  ## return cursor
-    for result in results:
-        players = result["away"]["players"][11:14]
-        players2 = result["home"]["players"][11:14]
-        for player in players:
-            if "subbedInExpandedMinute" in player:
-                    ids_nontit.append(player["playerId"])
-                    ids2_nontit.append(player["subbedOutPlayerId"])
-        for player in players2:
-            if "subbedInExpandedMinute" in player:
-                    ids_nontit.append(player["playerId"])
-                    ids2_nontit.append(player["subbedOutPlayerId"])
-    return Counter(ids_nontit), Counter(ids2_nontit)
+        ids_nontit = []
+        ids2_nontit = []
+        results = self.stagione_1819.find({})  ## return cursor
+        for result in results:
+            players = result["away"]["players"][11:14]
+            players2 = result["home"]["players"][11:14]
+            for player in players:
+                if "subbedInExpandedMinute" in player:
+                        ids_nontit.append(player["playerId"])
+                        ids2_nontit.append(player["subbedOutPlayerId"])
+            for player in players2:
+                if "subbedInExpandedMinute" in player:
+                        ids_nontit.append(player["playerId"])
+                        ids2_nontit.append(player["subbedOutPlayerId"])
+        return Counter(ids_nontit), Counter(ids2_nontit)
 
     # FUNZIONE CHE RITORNA TRE DIZIONARI PER CONTARE NUMERO DI CARTELLINI
     def Cartellini(self):
@@ -107,16 +118,16 @@ class DatasetMongo:
     #NUMERO DI TRIPLETTE
     ## FUNZIONE CHE RITORNA I MARCATORI DI UNA DATA PARTITA
     def getGoals(self, match):
-    scorers = []
-    home = match["home"]["incidentEvents"]
-    away = match ["away"]["incidentEvents"]
-    for event in home:
-        if event["type"]["value"] == 16:
-            scorers.append(event["playerId"])
-    for event in away:
-        if event["type"]["value"] == 16:
-            scorers.append(event["playerId"])
-    return scorers
+        scorers = []
+        home = match["home"]["incidentEvents"]
+        away = match ["away"]["incidentEvents"]
+        for event in home:
+            if event["type"]["value"] == 16:
+                scorers.append(event["playerId"])
+        for event in away:
+            if event["type"]["value"] == 16:
+                scorers.append(event["playerId"])
+        return scorers
 
     ## FUNZIONE CHE DATA UNA PARTITA SALVA SOLO I GIOCATORI CHE HANNO FATTO UNA TRIPLETTA
     def getTriplets(self, match):
@@ -127,13 +138,13 @@ class DatasetMongo:
 
     #FUNZIONE CHE RITONA DIZONARIO CON NUMERO DI TRIPLETTE FATTE NEL CAMPIONATO
     def getAllTriplets(self):
-            ls = []
-            results = self.stagione_1819.find({})  ## return cursor
-            for result in results:
-                triplets = self.getTriplets(result)
-                for x in triplets:
-                    ls.append(x)
-            return Counter(ls)
+        ls = []
+        results = self.stagione_1819.find({})  ## return cursor
+        for result in results:
+            triplets = self.getTriplets(result)
+            for x in triplets:
+                ls.append(x)
+        return Counter(ls)
 
     def GiocatoriPallaFerma(self):
         ls = []
@@ -224,44 +235,44 @@ class DatasetMongo:
             roles_word[key] = self.roles()[self.most_frequent(self.player_pos()[key])]
         return roles_word
 
-        def build_dataset(self):
-            stats = {}
-            for id_ in self.player.keys():
-                stats[id_] = {
-                'Name' : self.player[id_]['Name'],
-                'Team' : self.player[id_]['Team'],
-                'League' : self.player[id_]['League'],
-                'Apperances' : {
-                    'TotalApperances' : self.giocatoriTitolari()[int(id_)] + self.giocatoriNonTitolari()[0][int(id_)],
-                    'Started' : self.giocatoriTitolari()[int(id_)],
-                    'CameOn' : self.giocatoriNonTitolari()[0][int(id_)],
-                    'TakenOff' : self.giocatoriNonTitolari()[1][int(id_)]
-                },
-                 'Goal' : {
-                     'TotalGoals' : self.GiocatoriGoalTotali()[int(id_)],
-                     'HatTrick' : self.getAllTriplets()[int(id_)],
-                     'Penalty' : self.GiocatoriRigori()[int(id_)],
-                     'OpenPlay' : self.GiocatoriOpenPlay()[int(id_)],
-                     'GoalSetPiece' : self.GiocatoriPallaFerma()[int(id_)],
-                     'OwnGoal' : self.Autogol()[int(id_)]
-                 },
-                 'Assist' : self.GiocatoriAssists()[int(id_)],
-                 'Card' : {
-                    'Yellow' : self.Cartellini()[0][int(id_)] - self.Cartellini()[1][int(id_)],
-                    'DoubleYellow' : self.Cartellini()[1][int(id_)],
-                    'Red' : self.Cartellini()[2][int(id_)]
-                 }
-                }
-                if 'Team2' in self.player[id_]:
-                    stats[id_]['Team2'] = self.player[id_]['Team2']
-                if int(id_) in self.to_roles():
-                    stats[id_]['Position'] = self.to_roles()[int(id_)]
-                    if stats[id_]['Position'] in ('Goalkeeper', 'Defender'):
-                        stats[id_]['CleanSheet'] = self.PortieriInviolati()[int(id_)]
+    def build_dataset(self):
+        stats = {}
+        for id_ in self.player.keys():
+            stats[id_] = {
+            'Name' : self.player[id_]['Name'],
+            'Team' : self.player[id_]['Team'],
+            'League' : self.player[id_]['League'],
+            'Apperances' : {
+                'TotalApperances' : self.giocatoriTitolari()[int(id_)] + self.giocatoriNonTitolari()[0][int(id_)],
+                'Started' : self.giocatoriTitolari()[int(id_)],
+                'CameOn' : self.giocatoriNonTitolari()[0][int(id_)],
+                'TakenOff' : self.giocatoriNonTitolari()[1][int(id_)]
+            },
+             'Goal' : {
+                 'TotalGoals' : self.GiocatoriGoalTotali()[int(id_)],
+                 'HatTrick' : self.getAllTriplets()[int(id_)],
+                 'Penalty' : self.GiocatoriRigori()[int(id_)],
+                 'OpenPlay' : self.GiocatoriOpenPlay()[int(id_)],
+                 'GoalSetPiece' : self.GiocatoriPallaFerma()[int(id_)],
+                 'OwnGoal' : self.Autogol()[int(id_)]
+             },
+             'Assist' : self.GiocatoriAssists()[int(id_)],
+             'Card' : {
+                'Yellow' : self.Cartellini()[0][int(id_)] - self.Cartellini()[1][int(id_)],
+                'DoubleYellow' : self.Cartellini()[1][int(id_)],
+                'Red' : self.Cartellini()[2][int(id_)]
+             }
+            }
+            if 'Team2' in self.player[id_]:
+                stats[id_]['Team2'] = self.player[id_]['Team2']
+            if int(id_) in self.to_roles():
+                stats[id_]['Position'] = self.to_roles()[int(id_)]
+                if stats[id_]['Position'] in ('Goalkeeper', 'Defender'):
+                    stats[id_]['CleanSheet'] = self.PortieriInviolati()[int(id_)]
 
-            return stats
+        return stats
 
-        def create(self):
-            with open('Dataset-mongo.json', 'w') as f:
-                f.write(json.dumps(self.build_dataset()))
-            print("Dataset created")
+    def create(self):
+        with open('Dataset-mongo.json', 'w') as f:
+            f.write(json.dumps(self.build_dataset()))
+        print("Dataset created")
