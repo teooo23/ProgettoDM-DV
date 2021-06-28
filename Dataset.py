@@ -78,7 +78,7 @@ class Dataset:
                     #in alcuni casi non è presente l'id del giocatore perché è stato espulso l'allenatore
                     if "playerId" in events1[i]:
                         ls2.append(events1[i]["playerId"])
-            return Counter(ls), Counter(ls1), Counter(ls2)
+        return Counter(ls), Counter(ls1), Counter(ls2)
 
     #NUMERO GOL OPEN PLAY
     def GiocatoriOpenPlay(self):
