@@ -60,25 +60,25 @@ class Dataset:
         for match in self.data1.keys():
             events = self.data1[match]["home"]["incidentEvents"]
             events1 = self.data1[match]["away"]["incidentEvents"]
-        for i in range(len(events)):
-            if ("cardType" in events[i]) and (events[i]["cardType"]["displayName"] == "Yellow"):
-                ls.append(events[i]["playerId"])
-            elif ("cardType" in events[i]) and (events[i]["cardType"]["displayName"] == "SecondYellow"):
-                ls1.append(events[i]["playerId"])
-            elif ("cardType" in events[i]) and (events[i]["cardType"]["displayName"] == "Red"):
-                #in alcuni casi non è presente l'id del giocatore perché è stato espulso l'allenatore
-                if "playerId" in events[i]:
-                    ls2.append(events[i]["playerId"])
-        for i in range(len(events1)):
-            if ("cardType" in events1[i]) and (events1[i]["cardType"]["displayName"] == "Yellow"):
-                ls.append(events1[i]["playerId"])
-            elif ("cardType" in events1[i]) and (events1[i]["cardType"]["displayName"] == "SecondYellow"):
-                ls1.append(events1[i]["playerId"])
-            elif ("cardType" in events1[i]) and (events1[i]["cardType"]["displayName"] == "Red"):
-                #in alcuni casi non è presente l'id del giocatore perché è stato espulso l'allenatore
-                if "playerId" in events1[i]:
-                    ls2.append(events1[i]["playerId"])
-        return Counter(ls), Counter(ls1), Counter(ls2)
+            for i in range(len(events)):
+                if ("cardType" in events[i]) and (events[i]["cardType"]["displayName"] == "Yellow"):
+                    ls.append(events[i]["playerId"])
+                elif ("cardType" in events[i]) and (events[i]["cardType"]["displayName"] == "SecondYellow"):
+                    ls1.append(events[i]["playerId"])
+                elif ("cardType" in events[i]) and (events[i]["cardType"]["displayName"] == "Red"):
+                    #in alcuni casi non è presente l'id del giocatore perché è stato espulso l'allenatore
+                    if "playerId" in events[i]:
+                        ls2.append(events[i]["playerId"])
+            for i in range(len(events1)):
+                if ("cardType" in events1[i]) and (events1[i]["cardType"]["displayName"] == "Yellow"):
+                    ls.append(events1[i]["playerId"])
+                elif ("cardType" in events1[i]) and (events1[i]["cardType"]["displayName"] == "SecondYellow"):
+                    ls1.append(events1[i]["playerId"])
+                elif ("cardType" in events1[i]) and (events1[i]["cardType"]["displayName"] == "Red"):
+                    #in alcuni casi non è presente l'id del giocatore perché è stato espulso l'allenatore
+                    if "playerId" in events1[i]:
+                        ls2.append(events1[i]["playerId"])
+            return Counter(ls), Counter(ls1), Counter(ls2)
 
     #NUMERO GOL OPEN PLAY
     def GiocatoriOpenPlay(self):
@@ -264,6 +264,6 @@ class Dataset:
         return stats
 
     def create(self):
-        with open('Dataset.json', 'w') as f:
+        with open('SerieA1819.json', 'w') as f:
             f.write(json.dumps(self.build_dataset()))
         print("Dataset created")

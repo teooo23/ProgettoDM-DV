@@ -3,7 +3,7 @@ from datetime import datetime
 
 start_time = datetime.now()
 print(f"Start time: {start_time}")
-dataset = Dataset("SerieA-2018-2019.json", "SerieA.csv")
+dataset = Dataset("Dataset/SerieA-2018-2019.json", "SerieA.csv")
 dataset.create()
 
 end_time = datetime.now()
